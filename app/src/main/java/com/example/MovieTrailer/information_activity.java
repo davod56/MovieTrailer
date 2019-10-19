@@ -40,9 +40,9 @@ public class information_activity extends RuntimePermissionsActivity  {
     ImageView imageView;
     TextView name, subject, time, year, Director, Actors, description, language;
     Button download, onlineMovie;
-    public static final int progress_bar_type = 0;
     String downloadURL,Name;
 
+    @RequiresApi(api = Build.VERSION_CODES.JELLY_BEAN)
     @SuppressLint("SetTextI18n")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -95,6 +95,7 @@ public class information_activity extends RuntimePermissionsActivity  {
     public void onPermissionsGranted(int requestCode) {
 
     }
+    @RequiresApi(api = Build.VERSION_CODES.JELLY_BEAN)
     public void dialog(){
 
         final SharedPreferences shared = getSharedPreferences("Prefs", MODE_PRIVATE);
@@ -118,7 +119,6 @@ public class information_activity extends RuntimePermissionsActivity  {
         download.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                createDirection();
                // new Download().execute(downloadURL);
                new  DownloadFile().execute(downloadURL);
             }
@@ -139,23 +139,13 @@ public class information_activity extends RuntimePermissionsActivity  {
         });
 
     }
-        public void createDirection(){
-            File root=android.os.Environment.getExternalStorageDirectory();
-            File dir=new File(root.getAbsolutePath()+"/Movie Trailer");
-            if (!dir.exists()){
-                dir.mkdirs();
-            }
 
-        }
-
+    @SuppressLint("StaticFieldLeak")
     private class DownloadFile extends AsyncTask<String, String, String> {
 
         private ProgressDialog progressDialog;
-        private String fileName;
-        private String folder;
         long StartTime;
         long EndTime;
-        private boolean isDownloaded;
 
         /**
          * Before starting background thread
@@ -194,13 +184,13 @@ public class information_activity extends RuntimePermissionsActivity  {
                         ("SimpleDateFormat") String timestamp = new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss").format(new Date());
 
                 //Extract file name from URL
-                fileName = f_url[0].substring(f_url[0].lastIndexOf('/') + 1);
+                String fileName = f_url[0].substring(f_url[0].lastIndexOf('/') + 1);
 
                 //Append timestamp to file name
                 fileName = timestamp + "_" + fileName;
 
                 //External directory path to save file
-                folder = Environment.getExternalStorageDirectory() + File.separator + "Movie Trailer/";
+                String folder = Environment.getExternalStorageDirectory() + File.separator + "Movie Trailer/";
 
                 //Create androiddeft folder if it does not exist
                 File directory = new File(folder);
@@ -212,7 +202,7 @@ public class information_activity extends RuntimePermissionsActivity  {
                 // Output stream to write file
                 OutputStream output = new FileOutputStream(folder + fileName);
 
-                byte data[] = new byte[1024];
+                byte[] data = new byte[1024];
 
                 long total = 0;
 
