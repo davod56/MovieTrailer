@@ -37,11 +37,11 @@ dependencies {
     //noinspection GradleCompatible
     implementation 'com.android.support:support-v4:27.1.1'
     //noinspection GradleCompatible
-    implementation 'com.android.support:design:27.1.1'
     implementation 'org.apache.httpcomponents:httpcore:4.4.10'
     implementation 'com.nineoldandroids:library:2.4.0'
     implementation 'com.daimajia.slider:library:1.1.5@aar'
     implementation 'com.daimajia.androidanimations:library:1.0.3@aar'
+    implementation 'com.mindorks.android:prdownloader:0.6.0'
 
 
 }

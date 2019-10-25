@@ -8,6 +8,7 @@ import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
+import android.widget.Button;
 import android.widget.Toast;
 
 import com.android.volley.Request;
@@ -28,7 +29,6 @@ public class TestActivity extends AppCompatActivity implements RecyclerAdapter.O
     ArrayList<Contact> arrayList = new ArrayList<>();
     String URL="http://10.0.3.2/android/php_scripts_insert_data_to_database/";
     String url = URL+"get_data.php";
-
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {

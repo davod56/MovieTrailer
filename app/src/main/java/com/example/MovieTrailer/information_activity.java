@@ -1,6 +1,7 @@
 package com.example.MovieTrailer;
 
 import androidx.annotation.RequiresApi;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.Manifest;
@@ -10,6 +11,7 @@ import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.graphics.Color;
 import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
@@ -19,9 +21,20 @@ import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.downloader.Error;
+import com.downloader.OnCancelListener;
+import com.downloader.OnDownloadListener;
+import com.downloader.OnPauseListener;
+import com.downloader.OnProgressListener;
+import com.downloader.OnStartOrResumeListener;
+import com.downloader.PRDownloader;
+import com.downloader.Progress;
+import com.downloader.Status;
+import com.example.MovieTrailer.utils.Utils;
 import com.squareup.picasso.Picasso;
 
 import java.io.BufferedInputStream;
@@ -37,17 +50,22 @@ import java.util.Objects;
 
 public class information_activity extends RuntimePermissionsActivity  {
     private static final int REQUEST_PERMISSIONS = 20;
+    private static String dirPath;
+    Dialog dialog;
     ImageView imageView;
-    TextView name, subject, time, year, Director, Actors, description, language;
-    Button download, onlineMovie;
+    TextView name, subject, time, year, Director, Actors, description, language,textViewProgressOne;
+    Button download, onlineMovie , buttonCancelOne;
     String downloadURL,Name;
-
+    ProgressBar progressBarOne;
+    int downloadIdOne;
     @RequiresApi(api = Build.VERSION_CODES.JELLY_BEAN)
     @SuppressLint("SetTextI18n")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_information_activity);
+        PRDownloader.initialize(getApplicationContext());
+
         imageView = findViewById(R.id.imageView2);
         name = findViewById(R.id.name_textView);
         subject = findViewById(R.id.subject_textView);
@@ -71,7 +89,6 @@ public class information_activity extends RuntimePermissionsActivity  {
         String director = myIntent.getStringExtra("director");
         String actors = myIntent.getStringExtra("actor");
         String lang = myIntent.getStringExtra("lang");
-
         name.setText("نام: " + Name);
         subject.setText("موضوع: " + Subject);
         time.setText("مدت زمان فیلم: " + Time);
@@ -80,18 +97,127 @@ public class information_activity extends RuntimePermissionsActivity  {
         Actors.setText("بازیگران: " + actors);
         description.setText("خلاصه ی فیلم: " + des);
         language.setText("زبان: " + lang);
-
         Picasso.get().load(image)
                 .error(R.drawable.ic_launcher_background)
                 .resize(300, 500)
                 .placeholder(R.drawable.indicator_corner_bg)
                 .into(imageView);
-        dialog();
-        download();
+        //dialog();
+       // download();
         onlineMovie();
+
+        dirPath = Utils.getRootDirPath(getApplicationContext());
+
+        //init();
+
+        onClickListenerOne();
+
+    }
+    private void init() {
+
+
     }
 
-    @Override
+    public void onClickListenerOne() {
+
+
+        download.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+
+               dialog=new Dialog(information_activity.this);
+               dialog.setContentView(R.layout.alert_dialog);
+               dialog.setTitle(" ");
+               buttonCancelOne = dialog.findViewById(R.id.buttonCancelOne);
+               textViewProgressOne =dialog. findViewById(R.id.textViewProgressOne);
+               progressBarOne =dialog. findViewById(R.id.progressBarOne);
+
+
+
+                if (Status.RUNNING == PRDownloader.getStatus(downloadIdOne)) {
+                    PRDownloader.pause(downloadIdOne);
+                    return;
+                }
+                progressBarOne.setIndeterminate(true);
+                progressBarOne.getIndeterminateDrawable().setColorFilter(
+                        Color.BLUE, android.graphics.PorterDuff.Mode.SRC_IN);
+
+                if (Status.PAUSED == PRDownloader.getStatus(downloadIdOne)) {
+                    PRDownloader.resume(downloadIdOne);
+                    return;
+                }
+                //String url1="https://as9.cdn.asset.aparat.com/aparat-video/89acd7a5306fadf23953aa1d95d072b317548699-144p__25700.mp4";
+               // String url="https://as3.cdn.asset.aparat.com/aparat-video/f596bf876b3fee2273d1ccbec4bbb83c17509982-144p__44337.mp4";
+
+                downloadIdOne = PRDownloader.download(downloadURL, dirPath, Name)
+                        .build()
+                        .setOnStartOrResumeListener(new OnStartOrResumeListener() {
+                            @Override
+                            public void onStartOrResume() {
+                                progressBarOne.setIndeterminate(false);
+                                buttonCancelOne.setEnabled(true);
+                            }
+                        })
+                        .setOnPauseListener(new OnPauseListener() {
+                            @Override
+                            public void onPause() {
+                            }
+                        })
+                        .setOnCancelListener(new OnCancelListener() {
+                            @Override
+                            public void onCancel() {
+                                buttonCancelOne.setEnabled(true);
+                                progressBarOne.setProgress(0);
+                                textViewProgressOne.setText("");
+                                downloadIdOne = 0;
+                                progressBarOne.setIndeterminate(false);
+                                dialog.dismiss();
+                            }
+                        })
+                        .setOnProgressListener(new OnProgressListener() {
+                            @Override
+                            public void onProgress(Progress progress) {
+                                long progressPercent = progress.currentBytes * 100 / progress.totalBytes;
+                                progressBarOne.setProgress((int) progressPercent);
+                                textViewProgressOne.setText(Utils.getProgressDisplayLine(progress.currentBytes, progress.totalBytes));
+                                progressBarOne.setIndeterminate(false);
+                            }
+                        })
+                        .start(new OnDownloadListener() {
+                            @SuppressLint("SetTextI18n")
+                            @Override
+                            public void onDownloadComplete() {
+                                buttonCancelOne.setEnabled(true);
+                                download.setVisibility(View.GONE);
+                                dialog.dismiss();
+                            }
+
+                            @Override
+                            public void onError(Error error) {
+                                Toast.makeText(getApplicationContext(), getString(Integer.parseInt("some_error occurred")) + " " + "1", Toast.LENGTH_SHORT).show();
+                                textViewProgressOne.setText("");
+                                progressBarOne.setProgress(0);
+                                downloadIdOne = 0;
+                                buttonCancelOne.setEnabled(true);
+                                progressBarOne.setIndeterminate(false);
+                            }
+                        });
+                buttonCancelOne.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View view) {
+                        PRDownloader.cancel(downloadIdOne);
+                    }
+                });
+         dialog.show();
+            }
+
+        });
+
+
+
+    }
+
+        @Override
     public void onPermissionsGranted(int requestCode) {
 
     }
@@ -154,11 +280,11 @@ public class information_activity extends RuntimePermissionsActivity  {
         @Override
         protected void onPreExecute() {
             super.onPreExecute();
-            this.progressDialog = new ProgressDialog(information_activity.this);
-            this.progressDialog.setMessage("Downloading file...");
-            this.progressDialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
-            this.progressDialog.setCancelable(false);
-            this.progressDialog.show();
+           progressDialog = new ProgressDialog(information_activity.this);
+           progressDialog.setMessage("Downloading file...");
+           progressDialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
+           progressDialog.setCancelable(false);
+           progressDialog.show();
         }
 
         /**
@@ -244,19 +370,17 @@ public class information_activity extends RuntimePermissionsActivity  {
         @Override
         protected void onPostExecute(String message) {
             // dismiss the dialog after the file was downloaded
-            long dataSize=message.length()/1024;
-            long takenTime = EndTime - StartTime;
-            long s = takenTime / 1000;
-            double speed = dataSize / s;
-
-
             this.progressDialog.dismiss();
 
             // Display File path after downloading
             Toast.makeText(getApplicationContext(),
                     message, Toast.LENGTH_LONG).show();
+
         }
     }
+
+
+
 }
 
 
